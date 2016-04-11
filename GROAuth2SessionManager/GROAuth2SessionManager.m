@@ -20,7 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#import "AFHTTPRequestOperation.h"
 #import "GROAuth2SessionManager.h"
 
 NSString * const kGROAuthCodeGrantType = @"authorization_code";
@@ -28,6 +27,7 @@ NSString * const kGROAuthClientCredentialsGrantType = @"client_credentials";
 NSString * const kGROAuthPasswordCredentialsGrantType = @"password";
 NSString * const kGROAuthRefreshGrantType = @"refresh_token";
 NSString * const kGROAuthErrorFailingOperationKey = @"GROAuthErrorFailingOperation";
+NSString * const kGROAuthErrorFailingDataTaskKey = @"GROAuthErrorFailingDataTask";
 
 #pragma mark GROAuth2SessionManager (Private)
 
@@ -67,6 +67,10 @@ NSString * const kGROAuthErrorFailingOperationKey = @"GROAuthErrorFailingOperati
         [self setClientID:clientID];
         [self setSecret:secret];
         [self setOAuthURL:oAuthURL];
+        
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_7_0
+        self.responseSerializer = [AFJSONResponseSerializer serializer];
+#endif
     }
 
     return self;
@@ -156,52 +160,51 @@ NSString * const kGROAuthErrorFailingOperationKey = @"GROAuthErrorFailingOperati
 
         return;
     }
-
-    AFHTTPRequestOperation *requestOperation = [[AFHTTPRequestOperation alloc] initWithRequest:mutableRequest];
-    [requestOperation setResponseSerializer:[AFJSONResponseSerializer serializer]];
-    [requestOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+    
+    NSURLSessionDataTask *dataTask = [self dataTaskWithRequest:mutableRequest completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
+        if (error != nil && failure != nil) {
+            if(error) {
+                NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithDictionary:error.userInfo];
+                userInfo[kGROAuthErrorFailingDataTaskKey] = dataTask;
+                error = [NSError errorWithDomain:error.domain code:error.code userInfo:userInfo];
+            }
+            failure(error);
+            return;
+        }
+        
         if ([responseObject valueForKey:@"error"]) {
-            if (failure) {
+            if (failure != nil) {
                 // TODO: Resolve the `error` field into a proper NSError object
                 // http://tools.ietf.org/html/rfc6749#section-5.2
                 failure(nil);
             }
-
+            
             return;
         }
-
+        
         NSString *refreshToken = [responseObject valueForKey:@"refresh_token"];
         if (refreshToken == nil || [refreshToken isEqual:[NSNull null]]) {
             refreshToken = [parameters valueForKey:@"refresh_token"];
         }
-
+        
         AFOAuthCredential *credential = [AFOAuthCredential credentialWithOAuthToken:[responseObject valueForKey:@"access_token"] tokenType:[responseObject valueForKey:@"token_type"]];
-
+        
         NSDate *expireDate = [NSDate distantFuture];
         id expiresIn = [responseObject valueForKey:@"expires_in"];
         if (expiresIn != nil && ![expiresIn isEqual:[NSNull null]]) {
             expireDate = [NSDate dateWithTimeIntervalSinceNow:[expiresIn doubleValue]];
         }
-
+        
         [credential setRefreshToken:refreshToken expiration:expireDate];
-
+        
         [self setAuthorizationHeaderWithCredential:credential];
-
+        
         if (success) {
             success(credential);
         }
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        if (failure) {
-            if(error) {
-                NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithDictionary:error.userInfo];
-                userInfo[kGROAuthErrorFailingOperationKey] = operation;
-                error = [NSError errorWithDomain:error.domain code:error.code userInfo:userInfo];
-            }
-            failure(error);
-        }
     }];
-
-    [requestOperation start];
+    
+    [dataTask resume];
 }
 
 @end
