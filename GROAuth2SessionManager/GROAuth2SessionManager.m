@@ -158,7 +158,8 @@ NSString * const kGROAuthErrorFailingDataTaskKey = @"GROAuthErrorFailingDataTask
         return;
     }
     
-    NSURLSessionDataTask *dataTask = [self dataTaskWithRequest:mutableRequest completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
+    __block NSURLSessionDataTask *dataTask = nil;
+    dataTask = [self dataTaskWithRequest:mutableRequest completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
         if (error != nil) {
             NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithDictionary:error.userInfo];
             userInfo[kGROAuthErrorFailingDataTaskKey] = dataTask;
