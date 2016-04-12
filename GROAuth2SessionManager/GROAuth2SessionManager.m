@@ -26,7 +26,6 @@ NSString * const kGROAuthCodeGrantType = @"authorization_code";
 NSString * const kGROAuthClientCredentialsGrantType = @"client_credentials";
 NSString * const kGROAuthPasswordCredentialsGrantType = @"password";
 NSString * const kGROAuthRefreshGrantType = @"refresh_token";
-NSString * const kGROAuthErrorFailingOperationKey = @"GROAuthErrorFailingOperation";
 NSString * const kGROAuthErrorFailingDataTaskKey = @"GROAuthErrorFailingDataTask";
 
 #pragma mark GROAuth2SessionManager (Private)
@@ -67,10 +66,7 @@ NSString * const kGROAuthErrorFailingDataTaskKey = @"GROAuthErrorFailingDataTask
         [self setClientID:clientID];
         [self setSecret:secret];
         [self setOAuthURL:oAuthURL];
-        
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_7_0
         self.responseSerializer = [AFJSONResponseSerializer serializer];
-#endif
     }
 
     return self;
@@ -155,20 +151,21 @@ NSString * const kGROAuthErrorFailingDataTaskKey = @"GROAuthErrorFailingDataTask
 
     NSError *error;
     NSMutableURLRequest *mutableRequest = [[AFHTTPRequestSerializer serializer] requestWithMethod:@"POST" URLString:urlString parameters:parameters error:&error];
-    if (error) {
-        failure(error);
-
+    if (error != nil) {
+        if (failure != nil) {
+            failure(error);
+        }
         return;
     }
     
     NSURLSessionDataTask *dataTask = [self dataTaskWithRequest:mutableRequest completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
-        if (error != nil && failure != nil) {
-            if(error) {
-                NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithDictionary:error.userInfo];
-                userInfo[kGROAuthErrorFailingDataTaskKey] = dataTask;
-                error = [NSError errorWithDomain:error.domain code:error.code userInfo:userInfo];
+        if (error != nil) {
+            NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithDictionary:error.userInfo];
+            userInfo[kGROAuthErrorFailingDataTaskKey] = dataTask;
+            NSError *returnedError = [NSError errorWithDomain:error.domain code:error.code userInfo:userInfo];
+            if (failure != nil) {
+                failure(returnedError);
             }
-            failure(error);
             return;
         }
         
@@ -178,7 +175,6 @@ NSString * const kGROAuthErrorFailingDataTaskKey = @"GROAuthErrorFailingDataTask
                 // http://tools.ietf.org/html/rfc6749#section-5.2
                 failure(nil);
             }
-            
             return;
         }
         
