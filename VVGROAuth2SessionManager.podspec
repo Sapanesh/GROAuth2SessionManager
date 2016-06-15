@@ -8,6 +8,7 @@ Pod::Spec.new do |s|
   s.source   = { :git => 'https://github.com/Vivino/GROAuth2SessionManager.git', :tag => s.version }
   s.source_files = 'GROAuth2SessionManager'
   s.requires_arc = true
+  s.compiler_flags = '-Wnon-modular-include-in-framework-module'
 
   s.ios.deployment_target = '8.0'
 
