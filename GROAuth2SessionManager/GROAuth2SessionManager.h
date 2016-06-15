@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#import "AFNetworking/AFHTTPSessionManager.h"
+#import "AFNetworking/AFNetworking.h"
 #import "AFOAuthCredential.h"
 
 #ifndef _SECURITY_SECITEM_H_
