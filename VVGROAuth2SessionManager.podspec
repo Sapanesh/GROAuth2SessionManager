@@ -1,12 +1,12 @@
 Pod::Spec.new do |s|
   s.name     = 'VVGROAuth2SessionManager'
-  s.version  = '0.3.0'
+  s.version  = '0.3.1'
   s.license  = 'MIT'
   s.summary  = 'AFNetworking Extension for OAuth 2 Authentication.'
   s.homepage = 'https://github.com/Vivino/GROAuth2SessionManager'
   s.author   = { 'Gabriel Rinaldi' => 'gabriel@gabrielrinaldi.me', 'Mattt Thompson' => 'm@mattt.me' }
   s.source   = { :git => 'https://github.com/Vivino/GROAuth2SessionManager.git',
-                 :tag => '0.3.0' }
+                 :tag => '0.3.1' }
   s.source_files = 'GROAuth2SessionManager'
   s.requires_arc = true
 
