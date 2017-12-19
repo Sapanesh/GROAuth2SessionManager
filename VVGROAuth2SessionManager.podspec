@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '8.0'
 
-  s.dependency 'AFNetworking', '~> 3.0.0'
+  s.dependency 'AFNetworking'
 
   s.ios.frameworks = 'Security'
 
